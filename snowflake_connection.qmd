@@ -1,0 +1,175 @@
+---
+title: "Snowflake Data Connection"
+format: html
+editor: visual
+---
+
+```{r}
+#| output: false
+#| echo: false
+library(connectwidgets)
+library(dplyr)
+
+client <- connectwidgets::connect()
+```
+
+## Connect to Snowflake
+
+Posit Workbench and Posit Connect leverage our [Professional Drivers](https://docs.posit.co/pro-drivers/), including [Snowflake](https://solutions.posit.co/connections/db/databases/snowflake/). Our demo environment at Posit also has a predefined DSN (Data Source Name) for the Snowflake driver, which makes connecting a breeze!
+
+```{r}
+#| eval: false
+#| echo: true
+con <- DBI::dbConnect(odbc::odbc(), "Snowflake", timeout = 10)
+```
+
+Use the Connections pane in the RStudio IDE to explore the Snowflake database.
+
+## Extract Data from Snowflake
+
+It's always best to push as much computation to the database as possible. In the below example, we'll extract the `mtcars` dataset, but we'll filter for only certain columns before pulling in the data into our R session.
+
+```{r}
+#| eval: false
+#| echo: true
+snowflake_mtcars <- tbl(con, in_schema("PUBLIC", "mtcars")) |>
+  select(mpg, cyl, disp, hp, wt) |> 
+  collect()
+
+```
+
+## Build a Function
+
+We'll take the above code and put it inside of a function which will be used to create a plumber API.
+
+```{r}
+#| eval: false
+#| echo: true
+get_snowflake_data <- function() {
+  # Create the ODBC connection
+  con <- DBI::dbConnect(odbc::odbc(), 
+                        "Snowflake", 
+                        timeout = 10)
+  
+  # Execute the query
+  snowflake_mtcars <- tbl(con, in_schema("PUBLIC", "mtcars")) |>
+    select(mpg, cyl, disp, hp, wt) |> 
+    collect()
+  
+  # Close the database connection
+  dbDisconnect(con)
+  
+  return(snowflake_mtcars)
+}
+```
+
+And below is the code of the plumber API.
+
+```{r}
+#| eval: false
+#| echo: true
+library(DBI)
+library(dplyr)
+library(dbplyr)
+library(plumber)
+
+#* @apiTitle Extract mtcars from Snowflake DB
+#* @apiDescription Example workflow using a Plumber API to extract data from Snowflake DB.
+
+#* Return mtcars dataset
+#* @get /data
+function() {
+  # Create the ODBC connection
+  con <- DBI::dbConnect(odbc::odbc(), 
+                        "Snowflake", 
+                        timeout = 10)
+  
+  # Execute the query
+  snowflake_mtcars <- tbl(con, in_schema("PUBLIC", "mtcars")) |>
+    select(mpg, cyl, disp, hp, wt) |> 
+    collect()
+  
+  # Close the database connection
+  dbDisconnect(con)
+  
+  return(snowflake_mtcars)
+}
+```
+
+This API was published to Posit Connect and can be found here.
+
+```{r}
+client |> 
+  content() |> 
+  filter(guid == "d0390a9a-3a83-4485-a483-0f2907c6baed") |> 
+  rsc_card()
+```
+
+## Shiny App
+
+The above plumber API is then used to feed the mtcars data into a shiny app. The code for the shiny app is below along with a card to the application on Posit Connect:
+
+```{r}
+#| eval: false
+#| echo: true
+library(shiny)
+library(bslib)
+library(ggplot2)
+library(httr)
+library(jsonlite)
+
+# Read in mtcars from API -------------
+api_url <- "https://colorado.posit.co/rsc/snowflake_mtcars/data"
+
+response <- GET(api_url)
+
+# Check if the request was successful
+if (http_type(response) == "application/json") {
+  # Parse the JSON response
+  mtcars_data <- content(response, "text") |>
+    fromJSON()
+  
+} else {
+  cat("Request failed with status code:", http_status(response))
+}
+
+# User Interface -----------------------
+ui <- page_sidebar(
+  title = "mtcars dashboard",
+  sidebar = sidebar(
+    title = "Plot controls",
+    varSelectInput(
+      "x", "Select x axis variable",
+      data = mtcars_data, 
+      selected = "mpg"
+    ),
+    varSelectInput(
+      "y", "Select y axis variable",
+      data = mtcars_data,
+      selected = "disp"
+    )
+  ),
+  card(
+    card_header("mtcars Plot"),
+    plotOutput("p")
+  )
+)
+
+# Server Function ------------------------
+server <- function(input, output) {
+  output$p <- renderPlot({
+    ggplot(mtcars_data) +
+      geom_point(aes(!!input$x, !!input$y)) +
+      theme_bw(base_size = 20)
+  })
+}
+
+shinyApp(ui, server)
+```
+
+```{r}
+client |> 
+  content() |> 
+  filter(guid == "cf6d2b7c-9508-4eec-9e21-58406082959f") |> 
+  rsc_card()
+```

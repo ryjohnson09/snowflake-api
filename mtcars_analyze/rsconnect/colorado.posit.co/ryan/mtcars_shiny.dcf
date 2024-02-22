@@ -1,0 +1,12 @@
+name: mtcars_shiny
+title: mtcars_shiny
+username: ryan
+account: ryan
+server: colorado.posit.co
+hostUrl: https://colorado.posit.co/rsc/__api__
+appId: 18236
+bundleId: 81344
+url: https://colorado.posit.co/rsc/content/cf6d2b7c-9508-4eec-9e21-58406082959f/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

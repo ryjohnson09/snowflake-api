@@ -1,0 +1,12 @@
+name: snowflake_extract
+title: snowflake_extract
+username: ryan
+account: ryan
+server: colorado.posit.co
+hostUrl: https://colorado.posit.co/rsc/__api__
+appId: 18235
+bundleId: 81343
+url: https://colorado.posit.co/rsc/content/d0390a9a-3a83-4485-a483-0f2907c6baed/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

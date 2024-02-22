@@ -1,0 +1,43 @@
+---
+title: "Snowflake Data Connection"
+format: html
+editor: visual
+---
+
+```{python}
+import pyodbc
+import pandas as pd
+
+# Connect to Snowflake
+con=pyodbc.connect('DSN=Snowflake')
+cursor = con.cursor()
+
+# Make SQL query
+#sql_query = text("SELECT mpg, cyl, disp, hp, wt FROM PUBLIC.mtcars")
+
+cursor.execute("SELECT * FROM PUBLIC.TEST")
+
+data = cursor.fetchall()
+
+df = pd.DataFrame(tuple(t) for t in data)
+
+print(df)
+```
+
+
+
+```{python}
+import pandas as pd
+
+# Example list of tuples
+data_list = [(1, 'Alice', 30),
+             (2, 'Bob', 25),
+             (3, 'Charlie', 28)]
+
+# Create a DataFrame from the list of tuples
+df = pd.DataFrame(data_list, columns=['ID', 'Name', 'Age'])
+
+# Print the DataFrame
+print(df)
+
+```
