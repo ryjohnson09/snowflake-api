@@ -12,7 +12,7 @@ response <- GET(api_url)
 # Check if the request was successful
 if (http_type(response) == "application/json") {
   # Parse the JSON response
-  mtcars_data <- content(response, "text") |>
+  mtcars_data <- httr::content(response, "text") |>
     fromJSON()
   
 } else {
